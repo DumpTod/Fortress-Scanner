@@ -1,0 +1,660 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>FORTRESS Scanner 🏰</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f5f5f0;
+            color: #2c3e50;
+            min-height: 100vh;
+        }
+
+        /* HEADER */
+        .header {
+            background: linear-gradient(135deg, #4682B4, #2c5f8a);
+            color: white;
+            padding: 20px 40px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        }
+
+        .header h1 {
+            font-size: 28px;
+            font-weight: 700;
+            letter-spacing: 2px;
+        }
+
+        .header h1 span {
+            font-size: 14px;
+            font-weight: 400;
+            opacity: 0.8;
+            display: block;
+            letter-spacing: 0;
+        }
+
+        .header-right {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+
+        .api-input {
+            padding: 10px 15px;
+            border: 2px solid rgba(255,255,255,0.3);
+            border-radius: 8px;
+            background: rgba(255,255,255,0.15);
+            color: white;
+            font-size: 14px;
+            width: 350px;
+            outline: none;
+        }
+
+        .api-input::placeholder {
+            color: rgba(255,255,255,0.6);
+        }
+
+        .api-input:focus {
+            border-color: rgba(255,255,255,0.7);
+        }
+
+        .scan-btn {
+            padding: 12px 30px;
+            background: #e74c3c;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 700;
+            cursor: pointer;
+            letter-spacing: 1px;
+            transition: all 0.3s;
+            text-transform: uppercase;
+        }
+
+        .scan-btn:hover {
+            background: #c0392b;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(231,76,60,0.4);
+        }
+
+        .scan-btn:disabled {
+            background: #95a5a6;
+            cursor: not-allowed;
+            transform: none;
+        }
+
+        .scan-btn.scanning {
+            animation: pulse 1.5s infinite;
+        }
+
+        @keyframes pulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.6; }
+        }
+
+        /* STATUS BAR */
+        .status-bar {
+            background: #34495e;
+            color: #ecf0f1;
+            padding: 10px 40px;
+            font-size: 13px;
+            display: flex;
+            justify-content: space-between;
+        }
+
+        .status-bar .dot {
+            display: inline-block;
+            width: 8px;
+            height: 8px;
+            border-radius: 50%;
+            margin-right: 6px;
+        }
+
+        .dot.green { background: #2ecc71; }
+        .dot.red { background: #e74c3c; }
+        .dot.yellow { background: #f39c12; }
+
+        /* MAIN CONTENT */
+        .main {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 30px;
+            padding: 30px 40px;
+            max-width: 1600px;
+            margin: 0 auto;
+        }
+
+        .column {
+            background: white;
+            border-radius: 12px;
+            box-shadow: 0 2px 15px rgba(0,0,0,0.08);
+            overflow: hidden;
+        }
+
+        .column-header {
+            padding: 18px 25px;
+            font-size: 18px;
+            font-weight: 700;
+            letter-spacing: 1px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+
+        .column-header .count {
+            font-size: 13px;
+            font-weight: 400;
+            opacity: 0.7;
+        }
+
+        .buy-header {
+            background: linear-gradient(135deg, #27ae60, #2ecc71);
+            color: white;
+        }
+
+        .sell-header {
+            background: linear-gradient(135deg, #e74c3c, #c0392b);
+            color: white;
+        }
+
+        .column-body {
+            padding: 15px;
+            max-height: 70vh;
+            overflow-y: auto;
+        }
+
+        /* STOCK CARDS */
+        .stock-card {
+            background: #fafafa;
+            border: 1px solid #eee;
+            border-radius: 10px;
+            padding: 15px 20px;
+            margin-bottom: 12px;
+            transition: all 0.3s;
+            cursor: pointer;
+        }
+
+        .stock-card:hover {
+            border-color: #4682B4;
+            box-shadow: 0 4px 15px rgba(70,130,180,0.15);
+            transform: translateY(-2px);
+        }
+
+        .card-top {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 10px;
+        }
+
+        .stock-name {
+            font-size: 18px;
+            font-weight: 700;
+            color: #2c3e50;
+        }
+
+        .stock-name .fno-tag {
+            font-size: 10px;
+            background: #4682B4;
+            color: white;
+            padding: 2px 6px;
+            border-radius: 4px;
+            margin-left: 8px;
+            font-weight: 600;
+        }
+
+        .grade {
+            font-size: 20px;
+            font-weight: 800;
+            padding: 4px 12px;
+            border-radius: 8px;
+        }
+
+        .grade-aplus { background: #27ae60; color: white; }
+        .grade-a { background: #2ecc71; color: white; }
+        .grade-b { background: #f39c12; color: white; }
+        .grade-c { background: #e67e22; color: white; }
+
+        .card-prices {
+            display: grid;
+            grid-template-columns: 1fr 1fr 1fr;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+
+        .price-box {
+            text-align: center;
+            padding: 8px;
+            border-radius: 6px;
+        }
+
+        .price-box label {
+            font-size: 10px;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            opacity: 0.7;
+            display: block;
+            margin-bottom: 3px;
+        }
+
+        .price-box .value {
+            font-size: 16px;
+            font-weight: 700;
+        }
+
+        .entry-box { background: #eaf2f8; }
+        .entry-box .value { color: #2c3e50; }
+
+        .sl-box { background: #fdeaea; }
+        .sl-box .value { color: #e74c3c; }
+
+        .target-box { background: #eafaf1; }
+        .target-box .value { color: #27ae60; }
+
+        .card-bottom {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            font-size: 12px;
+            color: #7f8c8d;
+            padding-top: 8px;
+            border-top: 1px solid #eee;
+        }
+
+        .rr-badge {
+            background: #4682B4;
+            color: white;
+            padding: 3px 8px;
+            border-radius: 4px;
+            font-weight: 600;
+            font-size: 11px;
+        }
+
+        .score-bar {
+            width: 100px;
+            height: 6px;
+            background: #ecf0f1;
+            border-radius: 3px;
+            overflow: hidden;
+        }
+
+        .score-fill {
+            height: 100%;
+            border-radius: 3px;
+            transition: width 0.5s;
+        }
+
+        .fill-aplus { background: #27ae60; }
+        .fill-a { background: #2ecc71; }
+        .fill-b { background: #f39c12; }
+        .fill-c { background: #e67e22; }
+
+        /* WALL DETAILS (expandable) */
+        .wall-details {
+            display: none;
+            margin-top: 10px;
+            padding: 10px;
+            background: #f8f9fa;
+            border-radius: 6px;
+            font-size: 12px;
+        }
+
+        .wall-details.show {
+            display: block;
+        }
+
+        .wall-row {
+            display: flex;
+            justify-content: space-between;
+            padding: 4px 0;
+            border-bottom: 1px solid #eee;
+        }
+
+        .wall-row:last-child {
+            border-bottom: none;
+        }
+
+        /* EMPTY STATE */
+        .empty-state {
+            text-align: center;
+            padding: 60px 20px;
+            color: #bdc3c7;
+        }
+
+        .empty-state .icon {
+            font-size: 48px;
+            margin-bottom: 15px;
+        }
+
+        .empty-state p {
+            font-size: 16px;
+        }
+
+        /* LOADING */
+        .loading-overlay {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0,0,0,0.7);
+            z-index: 1000;
+            justify-content: center;
+            align-items: center;
+            flex-direction: column;
+        }
+
+        .loading-overlay.active {
+            display: flex;
+        }
+
+        .fortress-loader {
+            width: 80px;
+            height: 80px;
+            border: 4px solid rgba(255,255,255,0.2);
+            border-top: 4px solid #4682B4;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-bottom: 20px;
+        }
+
+        @keyframes spin {
+            to { transform: rotate(360deg); }
+        }
+
+        .loading-text {
+            color: white;
+            font-size: 18px;
+            font-weight: 600;
+        }
+
+        .loading-sub {
+            color: rgba(255,255,255,0.6);
+            font-size: 14px;
+            margin-top: 8px;
+        }
+
+        /* RESPONSIVE */
+        @media (max-width: 900px) {
+            .main {
+                grid-template-columns: 1fr;
+                padding: 15px;
+            }
+            .header {
+                flex-direction: column;
+                gap: 15px;
+                padding: 15px;
+            }
+            .api-input {
+                width: 100%;
+            }
+        }
+
+        /* SCROLLBAR */
+        .column-body::-webkit-scrollbar {
+            width: 6px;
+        }
+        .column-body::-webkit-scrollbar-track {
+            background: #f1f1f1;
+        }
+        .column-body::-webkit-scrollbar-thumb {
+            background: #bdc3c7;
+            border-radius: 3px;
+        }
+
+        .exit-condition {
+            font-size: 11px;
+            color: #4682B4;
+            font-style: italic;
+        }
+    </style>
+</head>
+<body>
+
+    <!-- LOADING OVERLAY -->
+    <div class="loading-overlay" id="loadingOverlay">
+        <div class="fortress-loader"></div>
+        <div class="loading-text">🏰 FORTRESS Scanning...</div>
+        <div class="loading-sub" id="loadingSub">Analyzing ~1,200 stocks through 7 walls</div>
+    </div>
+
+    <!-- HEADER -->
+    <div class="header">
+        <h1>
+            🏰 FORTRESS SCANNER
+            <span>7-Wall Defense Trading System</span>
+        </h1>
+        <div class="header-right">
+    <input type="hidden" id="apiUrl" value="https://alex-nonfouling-horacio.ngrok-free.dev">
+    <span style="color:rgba(255,255,255,0.7);font-size:13px;">🟢 Connected</span>
+    <button class="scan-btn" id="scanBtn" onclick="runScan()">
+        ⚔️ SCAN NOW
+    </button>
+</div>
+
+                ⚔️ SCAN NOW
+            </button>
+        </div>
+    </div>
+
+    <!-- STATUS BAR -->
+    <div class="status-bar">
+        <div>
+            <span class="dot yellow" id="statusDot"></span>
+            <span id="statusText">Ready — Enter API URL and click SCAN</span>
+        </div>
+        <div>
+            <span id="lastScan">Last Scan: Never</span>
+        </div>
+    </div>
+
+    <!-- MAIN COLUMNS -->
+    <div class="main">
+        <!-- BUY COLUMN -->
+        <div class="column">
+            <div class="column-header buy-header">
+                <span>🟢 BUY & HOLD</span>
+                <span class="count" id="buyCount">0 signals</span>
+            </div>
+            <div class="column-body" id="buyColumn">
+                <div class="empty-state">
+                    <div class="icon">📊</div>
+                    <p>Click SCAN to find BUY signals</p>
+                </div>
+            </div>
+        </div>
+
+        <!-- SELL COLUMN -->
+        <div class="column">
+            <div class="column-header sell-header">
+                <span>🔴 SELL & HOLD (FnO Only)</span>
+                <span class="count" id="sellCount">0 signals</span>
+            </div>
+            <div class="column-body" id="sellColumn">
+                <div class="empty-state">
+                    <div class="icon">📊</div>
+                    <p>Click SCAN to find SELL signals</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // ============================================================
+        // FORTRESS SCANNER — Frontend JavaScript
+        // ============================================================
+
+        function getGradeClass(grade) {
+            switch(grade) {
+                case 'A+': return 'grade-aplus';
+                case 'A': return 'grade-a';
+                case 'B': return 'grade-b';
+                case 'C': return 'grade-c';
+                default: return 'grade-c';
+            }
+        }
+
+        function getFillClass(grade) {
+            switch(grade) {
+                case 'A+': return 'fill-aplus';
+                case 'A': return 'fill-a';
+                case 'B': return 'fill-b';
+                case 'C': return 'fill-c';
+                default: return 'fill-c';
+            }
+        }
+
+        function createStockCard(stock, type) {
+    const gradeClass = getGradeClass(stock.grade);
+    const fillClass = getFillClass(stock.grade);
+    const cardId = `card-${stock.symbol}-${type}`;
+
+    const confColor = stock.confidence === 'HIGH' ? '#27ae60' :
+                      stock.confidence === 'MEDIUM' ? '#f39c12' : '#e74c3c';
+
+    let wallDetailsHTML = '';
+    if (stock.wall_scores) {
+        wallDetailsHTML = Object.entries(stock.wall_scores).map(([wall, score]) =>
+            `<div class="wall-row">
+                <span>${wall.replace('_', ' ')}</span>
+                <span><strong>${score}</strong></span>
+            </div>`
+        ).join('');
+    }
+
+    return `
+        <div class="stock-card" onclick="toggleWalls('${cardId}')">
+            <div class="card-top">
+                <div class="stock-name">
+                    ${stock.symbol}
+                    ${stock.is_fno ? '<span class="fno-tag">FnO</span>' : ''}
+                </div>
+                <div class="grade ${gradeClass}">${stock.grade}</div>
+            </div>
+            <div class="card-prices">
+                <div class="price-box entry-box">
+                    <label>Entry</label>
+                    <div class="value">₹${stock.entry.toFixed(2)}</div>
+                </div>
+                <div class="price-box sl-box">
+                    <label>Stop Loss</label>
+                    <div class="value">₹${stock.stop_loss.toFixed(2)}</div>
+                </div>
+                <div class="price-box target-box">
+                    <label>Target</label>
+                    <div class="value">₹${stock.target.toFixed(2)}</div>
+                </div>
+            </div>
+            <div class="card-bottom">
+                <span class="exit-condition">📌 ${stock.exit_condition}</span>
+                <span class="rr-badge">R:R 1:${stock.rr_ratio}</span>
+                <span style="background:${confColor};color:white;padding:3px 8px;border-radius:4px;font-size:11px;font-weight:600;">
+                    ${stock.confidence} ${stock.historical_win_rate}%
+                </span>
+            </div>
+            <div style="margin-top:6px;display:flex;justify-content:space-between;align-items:center;">
+                <span style="font-size:11px;color:#7f8c8d;">Score: ${stock.score} | Checks: ${stock.checks_passed || ''}</span>
+                <div class="score-bar">
+                    <div class="score-fill ${fillClass}" style="width:${stock.score}%"></div>
+                </div>
+                <span style="font-size:10px;color:#95a5a6;">${stock.past_setups || 0} past setups</span>
+            </div>
+            <div class="wall-details" id="${cardId}">
+                <strong>📋 Wall-by-Wall Breakdown:</strong>
+                ${wallDetailsHTML}
+            </div>
+        </div>
+    `;
+}
+
+        function toggleWalls(cardId) {
+            const el = document.getElementById(cardId);
+            el.classList.toggle('show');
+        }
+
+        async function runScan() {
+    const apiUrl = document.getElementById('apiUrl').value.trim().replace(/\/$/, '');
+
+    if (!apiUrl) {
+        alert('⚠️ Please paste your ngrok API URL first!');
+        return;
+    }
+
+    document.getElementById('loadingOverlay').classList.add('active');
+    document.getElementById('scanBtn').disabled = true;
+    document.getElementById('scanBtn').classList.add('scanning');
+    document.getElementById('scanBtn').textContent = '⏳ SCANNING...';
+    document.getElementById('statusDot').className = 'dot yellow';
+    document.getElementById('statusText').textContent = 'Scanning in progress...';
+
+    try {
+        const response = await fetch(`${apiUrl}/api/scan`, {
+            method: 'GET',
+            headers: {
+                'ngrok-skip-browser-warning': 'true',
+                'Content-Type': 'application/json'
+            }
+        });
+
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
+
+        const data = await response.json();
+
+        const buyColumn = document.getElementById('buyColumn');
+        if (data.buy && data.buy.length > 0) {
+            buyColumn.innerHTML = data.buy.map(s => createStockCard(s, 'buy')).join('');
+            document.getElementById('buyCount').textContent = `${data.buy.length} signals`;
+        } else {
+            buyColumn.innerHTML = '<div class="empty-state"><div class="icon">🏰</div><p>No BUY signals passed all 7 walls</p></div>';
+            document.getElementById('buyCount').textContent = '0 signals';
+        }
+
+        const sellColumn = document.getElementById('sellColumn');
+        if (data.sell && data.sell.length > 0) {
+            sellColumn.innerHTML = data.sell.map(s => createStockCard(s, 'sell')).join('');
+            document.getElementById('sellCount').textContent = `${data.sell.length} signals`;
+        } else {
+            sellColumn.innerHTML = '<div class="empty-state"><div class="icon">🏰</div><p>No SELL signals passed all 7 walls</p></div>';
+            document.getElementById('sellCount').textContent = '0 signals';
+        }
+
+        document.getElementById('statusDot').className = 'dot green';
+        document.getElementById('statusText').textContent =
+            `✅ Scan complete — ${data.buy?.length || 0} BUY | ${data.sell?.length || 0} SELL | ${data.total_stocks_scanned} stocks scanned`;
+        document.getElementById('lastScan').textContent =
+            `Last Scan: ${data.last_scan || new Date().toLocaleString()}`;
+
+    } catch (error) {
+        console.error('Scan failed:', error);
+        document.getElementById('statusDot').className = 'dot red';
+        document.getElementById('statusText').textContent =
+            `❌ Scan failed — ${error.message}`;
+        document.getElementById('buyColumn').innerHTML =
+            '<div class="empty-state"><div class="icon">⚠️</div><p>Connection failed. Check: 1) Colab is running 2) ngrok URL is correct 3) Try opening the URL in browser first</p></div>';
+        document.getElementById('sellColumn').innerHTML =
+            '<div class="empty-state"><div class="icon">⚠️</div><p>Try visiting your ngrok URL directly in browser first to bypass the warning page</p></div>';
+    } finally {
+        document.getElementById('loadingOverlay').classList.remove('active');
+        document.getElementById('scanBtn').disabled = false;
+        document.getElementById('scanBtn').classList.remove('scanning');
+        document.getElementById('scanBtn').textContent = '⚔️ SCAN NOW';
+    }
+}
+    </script>
+
+</body>
+</html>
